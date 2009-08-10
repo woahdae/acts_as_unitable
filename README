@@ -1,20 +1,24 @@
 ActsAsUnitable
 ==============
 
-Makes having attributes with units easy. Rewrites one or multiple attribute setters to also set '<attribute>_unit' attribute, and getters will then re-attach that unit.
+Makes having attributes with units easy. Creates attribute readers/setters that also set '<attribute>_unit' attribute, and getters will then re-attach that unit.
 
 Example
 =======
 
-The tests are probably the best examples, here's the gist:
+The tests are probably the best examples, but here's the gist:
 
-    require 'units/active_record'
+    require 'acts_as_unitable'
     
     class Item < ActiveRecord::Base
       acts_as_unitable :quantity
     end
     
-    Item.create!(:quantity => "5 pounds")
-    Item.first.quantity.unit # => 'pounds'
+    item = Item.new(:quantity_with_unit => "5 pounds")
+    item.quantity # => 5.0
+    item.quantity_unit # => "pounds"
+    item.quantity_with_unit # => "5 lbs" # a Unit object
+    item.quantity_with_unit.scalar # => 5.0
+    Item.first.quantity_with_unit.units # => 'lbs'
     
 Copyright (c) 2009 Woody Peterson, released under the MIT license
