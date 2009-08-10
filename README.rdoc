@@ -15,10 +15,10 @@ The tests are probably the best examples, but here's the gist:
     end
     
     item = Item.new(:quantity_with_unit => "5 pounds")
-    item.quantity # => 5.0
+    item.quantity # => 2.27 # stored as base unit, kg
     item.quantity_unit # => "pounds"
     item.quantity_with_unit # => "5 lbs" # a Unit object
     item.quantity_with_unit.scalar # => 5.0
-    Item.first.quantity_with_unit.units # => 'lbs'
+    item.quantity_with_unit.units # => 'lbs'
     
 Copyright (c) 2009 Woody Peterson, released under the MIT license

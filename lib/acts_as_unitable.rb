@@ -1,33 +1,43 @@
+require 'float_extensions'
+require 'unit_extensions'
+
 module ActsAsUnitable
-  def self.parse_unitable_string(value)
-    value =~ /^(.*) (\w.+)$/
-    return string_fraction_to_decimal($1), $2
-  end
+  class NoUnitError < StandardError;end
   
-  def self.string_fraction_to_decimal(string_fraction)
-    eval string_fraction.gsub(" ","+").gsub(/([0-9]+\/[0-9]+)$/, "\\1.0")
+  def parse_unitable_string(value)
+    value =~ /^(.*) (\w.+)$/
+    return fraction_string_to_float($1), $2
   end
   
   def acts_as_unitable(*methods)
     methods.each do |method|
       define_method("#{method}_with_unit".to_sym) do
-        unit_attr = "#{method}_unit".to_sym
-        self[unit_attr].blank? ? self[method] : self[method].send(:to_unit, self[unit_attr])
+        desired_unit = self["#{method}_unit".to_sym]
+        
+        raise NoUnitError, "no unit in database" if desired_unit.blank?
+        
+        begin
+        base_unit = self[method].send(:to_unit, Unit.base_unit(desired_unit))
+        return base_unit.convert_to(desired_unit)
+        rescue
+        raise [base_unit, desired_unit, self[method]].join(" ")
+        end
       end
-
+      
       define_method("#{method}_with_unit=".to_sym) do |value|
         if value.is_a?(String)
-          amount, unit = ActsAsUnitable.parse_unitable_string(value)
+          unit = Unit.new(value)
+          value =~ /^(.*) (\w+)$/
+          desired_units = $2
         elsif value.respond_to?(:scalar) && value.units
-          amount = value.scalar
-          unit = value.units
+          unit = value
+          desired_units = value.units
         else
-          amount = value
-          unit = nil
+          raise NoUnitError, "pass in a string or Unit instance"
         end
 
-        self[method] = amount.to_f
-        self["#{method}_unit".to_sym] = self.attributes["#{method}_unit"] || unit
+        self[method] = unit.base_scalar
+        self["#{method}_unit".to_sym] = self.attributes["#{method}_unit"] || desired_units
       end
     end
   end
