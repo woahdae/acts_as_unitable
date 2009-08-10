@@ -4,8 +4,8 @@ require 'active_support'
 require 'active_support/test_case'
 
 require 'activerecord'
+require 'ruby-units'
 require File.dirname(__FILE__) + '/../lib/acts_as_unitable'
-require 'units/standard'
 
 ActiveRecord::Base.establish_connection(
   :adapter => 'sqlite3',

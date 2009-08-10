@@ -1,35 +1,38 @@
-module Units
-  module ActiveRecord
-    def acts_as_unitable(*methods)
-      methods.each do |method|
-        define_method(method) do
-          unit_attr = "#{method}_unit".to_sym
-          self[unit_attr].blank? ? self[method] : self[method].send(self[unit_attr])
+module ActsAsUnitable
+  def self.parse_unitable_string(value)
+    value =~ /^(.*) (\w.+)$/
+    return string_fraction_to_decimal($1), $2
+  end
+  
+  def self.string_fraction_to_decimal(string_fraction)
+    eval string_fraction.gsub(" ","+").gsub(/([0-9]+\/[0-9]+)$/, "\\1.0")
+  end
+  
+  def acts_as_unitable(*methods)
+    methods.each do |method|
+      define_method("#{method}_with_unit".to_sym) do
+        unit_attr = "#{method}_unit".to_sym
+        self[unit_attr].blank? ? self[method] : self[method].send(:to_unit, self[unit_attr])
+      end
+
+      define_method("#{method}_with_unit=".to_sym) do |value|
+        if value.is_a?(String)
+          amount, unit = ActsAsUnitable.parse_unitable_string(value)
+        elsif value.respond_to?(:scalar) && value.units
+          amount = value.scalar
+          unit = value.units
+        else
+          amount = value
+          unit = nil
         end
 
-        define_method("#{method}=".to_sym) do |value|
-          if value.is_a?(String) && value =~ /^(.*?) (\w.*?)$/
-            amount = $1
-            unit = $2
-          elsif value.respond_to?(:unit) && value.unit
-            amount = value
-            unit = value.unit
-          else
-            amount = value
-            unit = nil
-          end
-
-          amount = amount.to_f
-          amount = amount.send(unit) if unit
-
-          self[method] = amount
-          self["#{method}_unit".to_sym] = self.attributes["#{method}_unit"] || unit
-        end
+        self[method] = amount.to_f
+        self["#{method}_unit".to_sym] = self.attributes["#{method}_unit"] || unit
       end
     end
   end
-end 
-    
+end
+
 class ActiveRecord::Base
-  extend Units::ActiveRecord
+  extend ActsAsUnitable
 end
