@@ -14,14 +14,10 @@ module ActsAsUnitable
       define_method("#{method}_with_unit".to_sym) do
         desired_unit = self["#{method}_unit".to_sym]
         
-        raise NoUnitError, "no unit in database" if desired_unit.blank?
+        return self[method] if desired_unit.blank?
         
-        begin
         base_unit = self[method].send(:to_unit, Unit.base_unit(desired_unit))
         return base_unit.convert_to(desired_unit)
-        rescue
-        raise [base_unit, desired_unit, self[method]].join(" ")
-        end
       end
       
       define_method("#{method}_with_unit=".to_sym) do |value|
