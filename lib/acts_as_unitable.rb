@@ -1,6 +1,3 @@
-require 'float_extensions'
-require 'unit_extensions'
-
 module ActsAsUnitable
   class NoUnitError < StandardError;end
   
@@ -21,6 +18,8 @@ module ActsAsUnitable
       end
       
       define_method("#{method}_with_unit=".to_sym) do |value|
+        # return if value.is_a?(String) && value.blank?
+        
         if value.is_a?(String)
           unit = Unit.new(value)
           value =~ /^(.*) (\w+)$/
@@ -40,5 +39,9 @@ module ActsAsUnitable
 end
 
 class ActiveRecord::Base
+  require 'ruby-units'
+  require 'float_extensions'
+  require 'unit_extensions'
+  
   extend ActsAsUnitable
 end
