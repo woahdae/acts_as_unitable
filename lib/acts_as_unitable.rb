@@ -7,14 +7,21 @@ module ActsAsUnitable
   end
   
   def validates_as_unit(*methods)
+    options = methods.pop if methods.last.is_a?(Hash)
+    options ||= {}
+
     methods.each do |method|
       validate do |record|
         desired_unit = record.send("#{method}_unit".to_sym)
         begin
           Unit.new(desired_unit)
         rescue ArgumentError => e
-          if e.message.match("Unit not recognized")
-            record.errors.add("#{method}_unit", "'#{desired_unit}' is not a valid unit of measurement")
+          if e.message.match("No Unit Specified")
+            record.errors.add("#{method}_with_unit", "not specified") unless options[:allow_blank]
+          elsif e.message.match("Unit")
+            unless options[:allow_blank] && desired_unit.blank?
+              record.errors.add("#{method}_with_unit", "'#{desired_unit}' is not a valid unit of measurement")
+            end
           else
             raise e
           end
@@ -34,7 +41,7 @@ module ActsAsUnitable
           base_unit = self[method].send(:to_unit, Unit.base_unit(desired_unit))
           return base_unit.convert_to(desired_unit)
         rescue ArgumentError => e
-          if e.message.match("Unit not recognized")
+          if e.message.match("Unit not recognized") || e.message.match("No Unit Specified")
             return self[method]
           else
             raise e
@@ -60,7 +67,7 @@ module ActsAsUnitable
           self[method] = unit.base_scalar
           self["#{method}_unit".to_sym] = self.attributes["#{method}_unit"] || desired_units
         rescue ArgumentError => e
-          if e.message.match("Unit not recognized")
+          if e.message.match("Unit not recognized") || e.message.match("No Unit Specified")
             self[method] = quantity
             self["#{method}_unit".to_sym] = desired_units
           else
